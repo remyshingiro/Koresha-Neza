@@ -5,7 +5,7 @@ export const machines = [
     type: "Tractor",
     status: "Healthy",
     // Using a specific tractor image from Unsplash Source
-    image: "https://images.unsplash.com/photo-1605218427306-635489f6685c?w=600&auto=format&fit=crop&q=60",
+    image: "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=600&auto=format&fit=crop&q=60",
     usage: {
       currentHours: 185,
       serviceInterval: 200,
