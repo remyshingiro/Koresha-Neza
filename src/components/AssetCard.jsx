@@ -1,58 +1,76 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { Clock, AlertTriangle, CheckCircle, User } from 'lucide-react';
 
 const AssetCard = ({ machine }) => {
-  const isHealthy = machine.status === "Healthy";
-  const badgeColor = isHealthy ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
+  const isHealthy = machine.status === 'Healthy';
   
-  // Calculate progress
-  const healthPercentage = Math.min((machine.usage.currentHours / machine.usage.serviceInterval) * 100, 100);
+  // Calculate progress for the service bar (cap it at 100%)
+  const percentage = Math.min((machine.usage.currentHours / machine.usage.serviceInterval) * 100, 100);
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 relative group">
+    // 1. THIS LINK MAKES THE CARD CLICKABLE
+    <Link to={`/assets/${machine.id}`} className="block group">
       
-      {/* Image Section */}
-      <div className="h-48 overflow-hidden bg-gray-200">
-        <img 
-          src={machine.image} 
-          alt={machine.name} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-      </div>
-
-      {/* Content Section */}
-      <div className="p-5">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">
-            {machine.name}
-          </h3>
-          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${badgeColor}`}>
-            {machine.status}
-          </span>
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1 h-full flex flex-col">
+        
+        {/* Image Area */}
+        <div className="h-48 overflow-hidden relative bg-gray-100">
+           <img 
+             src={machine.image || 'https://images.unsplash.com/photo-1595116701777-626d7ba85655?w=600&q=80'} 
+             alt={machine.name} 
+             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+           />
+           <div className="absolute top-3 right-3">
+             <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
+               isHealthy ? 'bg-white/90 text-green-700' : 'bg-red-500 text-white'
+             }`}>
+               {machine.status}
+             </span>
+           </div>
         </div>
 
-        <div className="flex justify-between items-center mb-4">
-           <p className="text-gray-500 text-sm">{machine.type}</p>
-           {/* NEW: Show if currently rented out */}
-           {machine.assignment?.isAssigned && (
-             <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">
-               In Use: {machine.assignment.assignedTo.split(' ')[0]}
-             </span>
+        {/* Content Area */}
+        <div className="p-5 flex-1 flex flex-col">
+           <div className="flex justify-between items-start mb-1">
+             <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
+               {machine.name}
+             </h3>
+           </div>
+           
+           <p className="text-gray-500 text-sm mb-4">{machine.type}</p>
+
+           {/* Service Progress Bar */}
+           <div className="space-y-2 mt-auto">
+             <div className="flex justify-between text-xs font-medium text-gray-500">
+               <span>Service Health</span>
+               <span className={isHealthy ? 'text-green-600' : 'text-red-500'}>
+                 {machine.usage.currentHours}h / {machine.usage.serviceInterval}h
+               </span>
+             </div>
+             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+               <div 
+                 className={`h-full rounded-full ${isHealthy ? 'bg-blue-500' : 'bg-red-500'}`} 
+                 style={{ width: `${percentage}%` }}
+               ></div>
+             </div>
+           </div>
+
+           {/* Assignment Status (Footer) */}
+           {machine.assignment?.isAssigned ? (
+             <div className="mt-4 pt-3 border-t border-gray-50 flex items-center gap-2 text-xs font-bold text-blue-600 bg-blue-50/50 p-2 rounded-lg">
+               <User size={14} />
+               <span>In Use: {machine.assignment.assignedTo}</span>
+             </div>
+           ) : (
+             <div className="mt-4 pt-3 border-t border-gray-50 flex items-center gap-2 text-xs font-medium text-gray-400 p-2">
+               <CheckCircle size={14} />
+               <span>Available for checkout</span>
+             </div>
            )}
         </div>
-
-        {/* The Health Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
-          <div 
-            className={`h-2.5 rounded-full ${isHealthy ? 'bg-blue-600' : 'bg-red-500'}`} 
-            style={{ width: `${healthPercentage}%` }}
-          ></div>
-        </div>
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>{machine.usage.currentHours} hours used</span>
-          <span>Target: {machine.usage.serviceInterval}h</span>
-        </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
