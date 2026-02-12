@@ -96,20 +96,27 @@ const Login = () => {
       </div>
 
       {/* Right Side - Image */}
-      <div className="hidden lg:flex w-1/2 bg-blue-600 relative overflow-hidden items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-900 opacity-90 z-10"></div>
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden items-end justify-start">
+        
+        {/* 1. The Real Image (No blue tint, full opacity) */}
         <img 
           src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=1000&auto=format&fit=crop" 
-          alt="Agriculture" 
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50"
+          alt="Maize Plants" 
+          className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="relative z-20 text-white max-w-lg p-12">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8 border border-white/20">
-            <Tractor size={32} className="text-white" />
+
+        {/* 2. A Subtle Dark Gradient (Only at the bottom so text is readable) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+
+        {/* 3. Text Content */}
+        <div className="relative z-20 text-white p-16 w-full">
+          <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30">
+            <Tractor size={28} className="text-white" />
           </div>
-          <h1 className="text-4xl font-bold mb-6 leading-tight">Secure Access for Modern Cooperatives.</h1>
-          <p className="text-blue-100 text-lg">Manage your fleet, track maintenance, and organize your team all in one place.</p>
+          <h1 className="text-4xl font-bold mb-4 leading-tight">Secure Access for Modern Cooperatives.</h1>
+          <p className="text-gray-200 text-lg max-w-md">Manage your fleet, track maintenance, and organize your team all in one place.</p>
         </div>
+
       </div>
     </div>
   );

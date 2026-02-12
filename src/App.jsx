@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast'; // <--- 1. IMPORT THIS
+
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import AssetList from './pages/AssetList';
@@ -35,6 +37,34 @@ function App() {
     <AuthProvider>
       <MachineProvider>
         <BrowserRouter>
+          
+          {/* 2. ACTIVATE THE TOAST NOTIFICATION SYSTEM HERE */}
+          <Toaster 
+            position="top-right" 
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#1F2937', // Dark Gray (Professional)
+                color: '#fff',
+                borderRadius: '12px',
+                padding: '16px',
+                fontWeight: 'bold',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10B981', // Emerald Green
+                  secondary: 'white',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#EF4444', // Red
+                  secondary: 'white',
+                },
+              },
+            }} 
+          />
+
           <Routes>
             
             {/* PUBLIC */}

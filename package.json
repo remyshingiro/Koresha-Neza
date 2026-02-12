@@ -12,10 +12,14 @@
   "dependencies": {
     "date-fns": "^4.1.0",
     "firebase": "^12.9.0",
+    "jspdf": "^4.1.0",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.11.0",
+    "recharts": "^3.7.0",
     "simple-statistics": "^7.8.8"
   },
   "devDependencies": {
