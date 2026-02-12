@@ -1,31 +1,86 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import AssetList from './pages/AssetList';
 import AssetDetail from './pages/AssetDetail';
-// 1. IMPORT THE TEAM PAGE
 import Team from './pages/Team'; 
+import Settings from './pages/Settings'; 
+import Login from './pages/Login';
+
 import { MachineProvider } from './context/MachineContext'; 
+import { AuthProvider, useAuth } from './context/AuthContext'; 
+
+// SECURITY GUARD
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
 
 function App() {
   return (
-    <MachineProvider>
-      <BrowserRouter>
-        <Layout>
+    <AuthProvider>
+      <MachineProvider>
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/assets" element={<AssetList />} />
-            <Route path="/assets/:id" element={<AssetDetail />} />
             
-            {/* 2. ADD THE ROUTE HERE */}
-            <Route path="/team" element={<Team />} />
+            {/* PUBLIC */}
+            <Route path="/login" element={<Login />} />
+
+            {/* PROTECTED */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout><Navigate to="/dashboard" replace /></Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Layout><Dashboard /></Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/assets" element={
+              <ProtectedRoute>
+                <Layout><AssetList /></Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/assets/:id" element={
+              <ProtectedRoute>
+                <Layout><AssetDetail /></Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/team" element={
+              <ProtectedRoute>
+                <Layout><Team /></Layout>
+              </ProtectedRoute>
+            } />
             
-            <Route path="/settings" element={<div className="p-10">Settings Coming Soon</div>} />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout><Settings /></Layout>
+              </ProtectedRoute>
+            } />
+            
           </Routes>
-        </Layout>
-      </BrowserRouter>
-    </MachineProvider>
+        </BrowserRouter>
+      </MachineProvider>
+    </AuthProvider>
   );
 }
 

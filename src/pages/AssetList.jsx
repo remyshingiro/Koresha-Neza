@@ -1,30 +1,35 @@
 import React, { useState } from 'react';
-import { Search, Plus, Filter, Tractor, SlidersHorizontal } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, Plus, Tractor } from 'lucide-react';
 import { useMachines } from '../context/MachineContext';
 import AssetCard from '../components/AssetCard';
-import AddAssetModal from '../components/AddAssetModal'; // Ensure you have this or create it
+import AddAssetModal from '../components/AddAssetModal';
 
 const AssetList = () => {
   const { machines, loading, addMachine } = useMachines();
   
-  // State for UI controls
+  // UI State
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('All'); // All, Available, Assigned, Maintenance
+  const [filterStatus, setFilterStatus] = useState('All'); // All, Available, In Use, Maintenance
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- THE FILTERING LOGIC ---
+  // --- FILTER LOGIC ---
   const filteredMachines = machines.filter(machine => {
-    // 1. Search Filter (Name or Type)
+    // 1. Search Filter
     const matchesSearch = 
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.type.toLowerCase().includes(searchTerm.toLowerCase());
 
     // 2. Tab Filter
     let matchesStatus = true;
-    if (filterStatus === 'Available') matchesStatus = !machine.assignment?.isAssigned && machine.status === 'Healthy';
-    if (filterStatus === 'In Use') matchesStatus = machine.assignment?.isAssigned;
-    if (filterStatus === 'Maintenance') matchesStatus = machine.status !== 'Healthy' || (machine.usage.currentHours > machine.usage.serviceInterval);
+    if (filterStatus === 'Available') {
+      matchesStatus = !machine.assignment?.isAssigned && machine.status === 'Healthy';
+    }
+    if (filterStatus === 'In Use') {
+      matchesStatus = machine.assignment?.isAssigned === true;
+    }
+    if (filterStatus === 'Maintenance') {
+      matchesStatus = machine.status !== 'Healthy' || (machine.usage?.currentHours >= machine.usage?.serviceInterval);
+    }
 
     return matchesSearch && matchesStatus;
   });
@@ -63,7 +68,7 @@ const AssetList = () => {
           />
         </div>
 
-        {/* Filter Tabs (Desktop) */}
+        {/* Filter Tabs */}
         <div className="flex bg-gray-100 p-1 rounded-xl overflow-hidden">
            {['All', 'Available', 'In Use', 'Maintenance'].map((tab) => (
              <button
@@ -89,14 +94,14 @@ const AssetList = () => {
           ))}
         </div>
       ) : (
-        // Empty State (No Results)
+        // Empty State
         <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
           <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
             <Tractor size={32} />
           </div>
           <h3 className="text-lg font-bold text-gray-900">No assets found</h3>
           <p className="text-gray-500 max-w-xs mx-auto mt-2">
-            We couldn't find any machines matching "{searchTerm}" in the "{filterStatus}" category.
+            No machines matching "{searchTerm}" in the "{filterStatus}" category.
           </p>
           <button 
             onClick={() => { setSearchTerm(''); setFilterStatus('All'); }}
