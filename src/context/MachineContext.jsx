@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
-  ref, onValue, push, update, remove 
+  ref, onValue, push, update, remove, runTransaction 
 } from 'firebase/database';
 import { db } from '../firebase'; 
 import toast from 'react-hot-toast'; 
@@ -12,7 +12,7 @@ export const MachineProvider = ({ children }) => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- 1. LISTEN TO DATA ---
+  // --- 1. DATA SYNCHRONIZATION ---
   useEffect(() => {
     const machinesRef = ref(db, 'machines');
     const unsubscribeMachines = onValue(machinesRef, (snapshot) => {
@@ -35,7 +35,7 @@ export const MachineProvider = ({ children }) => {
     };
   }, []);
 
-  // --- 2. ACTIONS ---
+  // --- 2. ENTERPRISE ACTIONS ---
 
   const addMachine = async (machineData) => {
     try {
@@ -43,81 +43,66 @@ export const MachineProvider = ({ children }) => {
         name: machineData.name,
         type: machineData.type || 'Tractor',
         status: 'Healthy',
-        fuel: 100, // Default full tank
-        usage: { currentHours: 0, serviceInterval: 200 },
+        fuel: 100, 
+        usage: { 
+          currentHours: 0, 
+          serviceInterval: Number(machineData.serviceInterval) || 200,
+          dailyAverage: 5 // AI Baseline: Average work hours per day in Rwanda
+        },
         assignment: { isAssigned: false },
         history: [],
         fuelLogs: [],
         ...machineData
       };
       await push(ref(db, 'machines'), newMachine);
-      toast.success('Asset added successfully!');
+      toast.success('Asset added to enterprise fleet!');
     } catch (error) {
-      toast.error('Failed to add asset.');
+      toast.error('System failed to add asset.');
     }
   };
 
-  // --- FUEL LOGIC: REFUELING ---
+  // --- REFUELING (Atomic Reset) ---
   const logFuel = async (id, fuelData) => {
-    const currentMachine = machines.find(m => m.id === id);
-    if(!currentMachine) return;
-
     try {
-      // 1. ALWAYS reset to 100% when refueling
-      const newFuelLevel = 100; 
-
-      // 2. Add to history
-      const previousLogs = currentMachine.fuelLogs || [];
-      const updatedLogs = [fuelData, ...previousLogs];
-
-      await update(ref(db, `machines/${id}`), {
-        fuel: newFuelLevel,
-        fuelLogs: updatedLogs
+      await runTransaction(ref(db, `machines/${id}`), (machine) => {
+        if (machine) {
+          machine.fuel = 100; // Tank Reset
+          if (!machine.fuelLogs) machine.fuelLogs = [];
+          machine.fuelLogs = [fuelData, ...machine.fuelLogs];
+        }
+        return machine;
       });
-      toast.success(`Refueled: Tank is now 100%`);
+      toast.success(`Refueled to 100%`);
+    } catch (error) {
+      toast.error('Fuel logging failed.');
+    }
+  };
+
+  // --- PREDICTIVE USAGE LOGIC (Billion-Dollar Standard) ---
+  const logUsage = async (id, hours) => {
+    try {
+      // runTransaction prevents data loss during high-concurrency usage
+      await runTransaction(ref(db, `machines/${id}`), (machine) => {
+        if (machine) {
+          // 1. Calculate Fuel Burn (Enterprise logic: 5% per hour)
+          const currentFuel = (machine.fuel === undefined) ? 100 : Number(machine.fuel);
+          const fuelConsumed = Number(hours) * 5;
+          let newFuelLevel = Math.max(0, currentFuel - fuelConsumed);
+
+          // 2. Update Lifetime Hours
+          const currentHours = (machine.usage?.currentHours) ? Number(machine.usage.currentHours) : 0;
+          
+          // 3. Apply updates to the database object
+          machine.fuel = newFuelLevel;
+          if (!machine.usage) machine.usage = { dailyAverage: 5 };
+          machine.usage.currentHours = currentHours + Number(hours);
+        }
+        return machine;
+      });
+      toast.success(`Logged ${hours} work hours.`);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to log fuel.');
-    }
-  };
-
-  // --- WORK LOGIC: BURNING FUEL (FIXED) ---
-  const logUsage = async (id, hours) => {
-    const currentMachine = machines.find(m => m.id === id);
-    if (!currentMachine) return;
-
-    // 1. FIX: Handle machines that don't have a fuel value yet (Legacy Data)
-    // If 'fuel' is missing, assume it started at 100%
-    const currentFuel = (currentMachine.fuel !== undefined && currentMachine.fuel !== null) 
-                        ? currentMachine.fuel 
-                        : 100;
-
-    // 2. Calculate Burn (5% per hour)
-    const burnRate = 5; 
-    const fuelConsumed = hours * burnRate;
-    
-    // 3. Calculate New Level
-    let newFuelLevel = currentFuel - fuelConsumed;
-    if (newFuelLevel < 0) newFuelLevel = 0; // Prevent negatives
-
-    // 4. Update Hours
-    const currentHours = currentMachine.usage?.currentHours || 0;
-    const newHours = currentHours + Number(hours);
-
-    try {
-      await update(ref(db, `machines/${id}`), {
-        fuel: newFuelLevel,
-        "usage/currentHours": newHours
-      });
-      
-      if(newFuelLevel < 20) {
-        toast.error(`Warning: Low Fuel (${newFuelLevel}%)!`, { icon: '⛽' });
-      } else {
-        toast.success(`Logged ${hours} hrs. Fuel dropped to ${newFuelLevel}%`);
-      }
-
-    } catch (error) {
-      toast.error('Failed to log usage.');
+      toast.error('Telemetry update failed.');
     }
   };
 
@@ -130,9 +115,9 @@ export const MachineProvider = ({ children }) => {
           dueDate: new Date(Date.now() + duration * 86400000).toISOString().split('T')[0]
         }
       });
-      toast.success(`${farmerName} assigned!`);
+      toast.success(`Asset deployed to ${farmerName}`);
     } catch (error) {
-      toast.error('Assignment failed.');
+      toast.error('Deployment failed.');
     }
   };
 
@@ -141,61 +126,64 @@ export const MachineProvider = ({ children }) => {
       await update(ref(db, `machines/${id}`), {
         assignment: { isAssigned: false, assignedTo: null, dueDate: null }
       });
-      toast.success('Machine returned.');
+      toast.success('Asset returned to depot.');
     } catch (error) {
-      toast.error('Error returning machine.');
+      toast.error('Return protocol failed.');
     }
   };
 
   const logMaintenance = async (id, logData) => {
-    const currentMachine = machines.find(m => m.id === id);
-    if (!currentMachine) return;
     try {
-      const updatedHistory = [logData, ...(currentMachine.history || [])];
-      await update(ref(db, `machines/${id}`), {
-        status: "Healthy",
-        "usage/currentHours": 0,
-        history: updatedHistory
+      await runTransaction(ref(db, `machines/${id}`), (machine) => {
+        if (machine) {
+          machine.status = "Healthy";
+          if (!machine.usage) machine.usage = {};
+          machine.usage.currentHours = 0; // Reset hour meter after service
+          
+          if (!machine.history) machine.history = [];
+          machine.history = [logData, ...machine.history];
+        }
+        return machine;
       });
-      toast.success('Maintenance logged & hours reset!');
+      toast.success('Service complete: Hours reset.');
     } catch (error) {
-      toast.error('Failed to log service.');
+      toast.error('Maintenance log failed.');
     }
   };
 
   const deleteMachine = async (id) => {
     try {
       await remove(ref(db, `machines/${id}`));
-      toast.success('Asset deleted.');
+      toast.success('Asset decommissioned.');
     } catch (error) {
-      toast.error('Could not delete asset.');
+      toast.error('Decommissioning failed.');
     }
   };
 
   const addMember = async (member) => {
     try {
       await push(ref(db, 'members'), member);
-      toast.success('New member welcomed!');
+      toast.success('Member added to cooperative.');
     } catch (error) {
-      toast.error('Failed to add member.');
+      toast.error('Failed to add staff.');
     }
   };
   
   const removeMember = async (id) => {
     try {
       await remove(ref(db, `members/${id}`));
-      toast.success('Member removed.');
+      toast.success('Staff access revoked.');
     } catch (error) {
-      toast.error('Failed to remove member.');
+      toast.error('Revocation failed.');
     }
   };
 
   const resetData = async () => {
-    if(window.confirm("Delete ALL data?")) {
+    if(window.confirm("WARNING: You are about to wipe ALL enterprise data. Proceed?")) {
       try {
         await remove(ref(db, 'machines'));
         await remove(ref(db, 'members'));
-        toast.success('System Factory Reset Complete.');
+        toast.success('Factory Reset Complete.');
       } catch (error) {
         toast.error('Reset failed.');
       }

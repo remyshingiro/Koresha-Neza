@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Tractor } from 'lucide-react';
+import { Search, Plus, Tractor, Filter, LayoutGrid } from 'lucide-react';
 import { useMachines } from '../context/MachineContext';
 import AssetCard from '../components/AssetCard';
 import AddAssetModal from '../components/AddAssetModal';
@@ -9,17 +9,15 @@ const AssetList = () => {
   
   // UI State
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('All'); // All, Available, In Use, Maintenance
+  const [filterStatus, setFilterStatus] = useState('All'); 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- FILTER LOGIC ---
+  // --- FILTER LOGIC (Maintained) ---
   const filteredMachines = machines.filter(machine => {
-    // 1. Search Filter
     const matchesSearch = 
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.type.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // 2. Tab Filter
     let matchesStatus = true;
     if (filterStatus === 'Available') {
       matchesStatus = !machine.assignment?.isAssigned && machine.status === 'Healthy';
@@ -34,50 +32,56 @@ const AssetList = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) return <div className="p-10 text-center text-gray-500">Loading fleet data...</div>;
+  if (loading) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Fleet Data...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       
-      {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* 1. Header Section - Refined Typography */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Machinery</h1>
-          <p className="text-gray-500 mt-1">Manage {machines.length} assets in your fleet.</p>
+          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-1">Asset Control</span>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">My Machinery</h1>
+          <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tighter">Total Assets Managed: {machines.length}</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2 transition-all active:scale-95"
+          className="bg-blue-600 text-white px-6 py-3.5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-100 flex items-center gap-3 transition-all active:scale-95"
         >
-          <Plus size={20} /> Add New Asset
+          <Plus size={18} strokeWidth={3} /> Add New Asset
         </button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4">
+      {/* 2. Controls Bar - Refined Style */}
+      <div className="bg-white p-2 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col lg:flex-row gap-2">
         
         {/* Search Input */}
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
+        <div className="relative flex-1 group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
           <input 
             type="text" 
             placeholder="Search by name, model, or serial..." 
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-blue-500 rounded-xl outline-none transition-all"
+            className="w-full pl-13 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-[1.5rem] outline-none transition-all text-xs font-bold text-slate-700"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex bg-gray-100 p-1 rounded-xl overflow-hidden">
+        {/* Filter Tabs - Refined Typography */}
+        <div className="flex bg-slate-100/50 p-1.5 rounded-[1.5rem] overflow-x-auto no-scrollbar whitespace-nowrap">
            {['All', 'Available', 'In Use', 'Maintenance'].map((tab) => (
              <button
                key={tab}
                onClick={() => setFilterStatus(tab)}
-               className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+               className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                  filterStatus === tab 
-                   ? 'bg-white text-gray-900 shadow-sm' 
-                   : 'text-gray-500 hover:text-gray-700'
+                   ? 'bg-white text-blue-600 shadow-md scale-[1.02]' 
+                   : 'text-slate-400 hover:text-slate-600'
                }`}
              >
                {tab}
@@ -86,42 +90,41 @@ const AssetList = () => {
         </div>
       </div>
 
-      {/* Results Grid */}
+      {/* 3. Results Grid */}
       {filteredMachines.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {filteredMachines.map(machine => (
             <AssetCard key={machine.id} machine={machine} />
           ))}
         </div>
       ) : (
-        // Empty State
-        <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-          <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-            <Tractor size={32} />
+        /* Empty State - Refined Typography */
+        <div className="text-center py-32 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+          <div className="bg-white w-20 h-20 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-6 text-slate-300">
+            <Tractor size={40} strokeWidth={1} />
           </div>
-          <h3 className="text-lg font-bold text-gray-900">No assets found</h3>
-          <p className="text-gray-500 max-w-xs mx-auto mt-2">
+          <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Zero Assets Found</h3>
+          <p className="text-xs font-bold text-slate-400 max-w-xs mx-auto mt-2 uppercase tracking-tighter">
             No machines matching "{searchTerm}" in the "{filterStatus}" category.
           </p>
           <button 
             onClick={() => { setSearchTerm(''); setFilterStatus('All'); }}
-            className="mt-6 text-blue-600 font-bold hover:underline"
+            className="mt-8 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline px-6 py-3 bg-white rounded-xl shadow-sm border border-slate-100"
           >
             Clear all filters
           </button>
         </div>
       )}
 
-      {/* Add Asset Modal */}
-      {isModalOpen && (
-        <AddAssetModal 
-          onClose={() => setIsModalOpen(false)} 
-          onSave={(newAsset) => {
-            addMachine(newAsset);
-            setIsModalOpen(false);
-          }}
-        />
-      )}
+      {/* 4. Add Asset Modal (Maintained Prop Structure) */}
+      <AddAssetModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)} 
+        onSave={(newAsset) => {
+          addMachine(newAsset);
+          setIsModalOpen(false);
+        }}
+      />
 
     </div>
   );

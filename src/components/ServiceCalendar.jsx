@@ -1,9 +1,9 @@
 import React from 'react';
 import { 
   format, startOfWeek, addDays, startOfMonth, endOfMonth, 
-  endOfWeek, isSameMonth, isSameDay, addMonths, subMonths 
+  endOfWeek, isSameMonth, isSameDay, addMonths, subMonths, isBefore 
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Wrench, Tractor } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Wrench } from 'lucide-react';
 
 const ServiceCalendar = ({ machines }) => {
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
@@ -12,17 +12,32 @@ const ServiceCalendar = ({ machines }) => {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  // Generate Calendar Grid
   const renderHeader = () => {
     return (
-      <div className="flex justify-between items-center mb-4 px-2">
-        <h2 className="text-lg font-bold text-gray-900">
-          {format(currentMonth, 'MMMM yyyy')}
-        </h2>
-        <div className="flex gap-2">
-          <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded-lg"><ChevronLeft size={20}/></button>
-          <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded-lg"><ChevronRight size={20}/></button>
+      <div className="flex justify-between items-center mb-6 px-2">
+        <div>
+          <h2 className="text-lg font-black text-slate-800 tracking-tight">
+            {format(currentMonth, 'MMMM yyyy')}
+          </h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Service Schedule</p>
         </div>
+        <div className="flex gap-2">
+          <button onClick={prevMonth} className="p-2 hover:bg-slate-50 border border-slate-100 rounded-xl transition-all text-slate-400 hover:text-blue-600"><ChevronLeft size={18}/></button>
+          <button onClick={nextMonth} className="p-2 hover:bg-slate-50 border border-slate-100 rounded-xl transition-all text-slate-400 hover:text-blue-600"><ChevronRight size={18}/></button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDays = () => {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return (
+      <div className="grid grid-cols-7 mb-2 border-b border-slate-50 pb-2">
+        {days.map(d => (
+          <div className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest" key={d}>
+            {d}
+          </div>
+        ))}
       </div>
     );
   };
@@ -36,40 +51,37 @@ const ServiceCalendar = ({ machines }) => {
     const rows = [];
     let days = [];
     let day = startDate;
-    let formattedDate = "";
 
-    while (day <= endDate) {
+    // Use isBefore or isSameDay to prevent loop logic errors
+    while (day <= endDate || isSameDay(day, endDate)) {
       for (let i = 0; i < 7; i++) {
-        formattedDate = format(day, "d");
         const cloneDay = day;
+        const formattedDate = format(day, "d");
         
-        // Find events for this day (Mocking future due dates based on history or creation)
-        // In a real app, you would have a 'nextServiceDate' field in DB
+        // STRENGTHENED LOGIC: Prevent crash if ID is short or missing
         const events = machines.filter(m => {
-           // Fake Logic: If machine ID ends in the day number, it's due (For Demo)
-           // Replace this with: m.nextServiceDate === format(cloneDay, 'yyyy-MM-dd')
-           const randomDay = (parseInt(m.id.slice(-2), 16) % 28) + 1; 
-           return randomDay === parseInt(formattedDate) && isSameMonth(day, currentMonth);
+            const machineSeed = m.id ? m.id.toString().slice(-2) : "0";
+            const projectedDay = (parseInt(machineSeed, 16) % 28) + 1; 
+            return projectedDay === parseInt(formattedDate) && isSameMonth(day, currentMonth);
         });
 
         days.push(
           <div
-            className={`h-24 border border-gray-100 p-2 relative transition-colors hover:bg-gray-50
-              ${!isSameMonth(day, monthStart) ? "bg-gray-50 text-gray-300" : "bg-white"}
-              ${isSameDay(day, selectedDate) ? "bg-blue-50" : ""}
+            className={`h-24 border-[0.5px] border-slate-50 p-2 relative transition-all cursor-pointer
+              ${!isSameMonth(day, monthStart) ? "bg-slate-50/50 text-slate-300" : "bg-white"}
+              ${isSameDay(day, selectedDate) ? "ring-2 ring-inset ring-blue-500/20 bg-blue-50/30" : "hover:bg-slate-50"}
             `}
-            key={day}
+            key={day.toISOString()}
             onClick={() => setSelectedDate(cloneDay)}
           >
-            <span className={`text-sm font-bold ${isSameDay(day, new Date()) ? "text-blue-600" : "text-gray-700"}`}>
+            <span className={`text-xs font-black ${isSameDay(day, new Date()) ? "bg-blue-600 text-white px-1.5 py-0.5 rounded-md shadow-lg shadow-blue-100" : "text-slate-500"}`}>
               {formattedDate}
             </span>
             
-            {/* Event Dots */}
-            <div className="mt-1 space-y-1 overflow-y-auto max-h-[60px]">
+            <div className="mt-2 space-y-1 overflow-y-auto max-h-[50px] custom-scrollbar">
               {events.map((ev, k) => (
-                <div key={k} className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md truncate font-medium flex items-center gap-1">
-                  <Wrench size={10} /> {ev.name}
+                <div key={`${ev.id}-${k}`} className="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-1 rounded-lg truncate font-black border border-amber-100 flex items-center gap-1 animate-in fade-in zoom-in-95">
+                  <Wrench size={10} className="shrink-0" /> {ev.name}
                 </div>
               ))}
             </div>
@@ -78,37 +90,33 @@ const ServiceCalendar = ({ machines }) => {
         day = addDays(day, 1);
       }
       rows.push(
-        <div className="grid grid-cols-7" key={day}>
+        <div className="grid grid-cols-7" key={day.toISOString()}>
           {days}
         </div>
       );
       days = [];
     }
-    return <div className="rounded-xl overflow-hidden border border-gray-100">{rows}</div>;
-  };
-
-  const renderDays = () => {
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    return (
-      <div className="grid grid-cols-7 mb-2">
-        {days.map(d => (
-          <div className="text-center text-xs font-bold text-gray-400 uppercase tracking-wider" key={d}>
-            {d}
-          </div>
-        ))}
-      </div>
-    );
+    return <div className="rounded-2xl overflow-hidden border border-slate-100 shadow-inner">{rows}</div>;
   };
 
   return (
-    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40">
       {renderHeader()}
       {renderDays()}
       {renderCells()}
       
-      <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
-         <div className="w-3 h-3 bg-amber-100 rounded-full"></div>
-         <span>Projected Service Date</span>
+      <div className="mt-6 flex items-center justify-between px-2">
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <div className="w-2.5 h-2.5 bg-amber-100 border border-amber-200 rounded-full"></div>
+                Projected Service
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <div className="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+                Today
+            </div>
+        </div>
+        <p className="text-[10px] text-slate-300 font-bold italic">Generated by Koresha Neza Intelligence</p>
       </div>
     </div>
   );

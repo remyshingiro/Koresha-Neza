@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast'; // <--- 1. IMPORT THIS
+import { Toaster } from 'react-hot-toast';
 
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -9,7 +9,6 @@ import AssetDetail from './pages/AssetDetail';
 import Team from './pages/Team'; 
 import Settings from './pages/Settings'; 
 import Login from './pages/Login';
-
 import { MachineProvider } from './context/MachineContext'; 
 import { AuthProvider, useAuth } from './context/AuthContext'; 
 
@@ -38,13 +37,12 @@ function App() {
       <MachineProvider>
         <BrowserRouter>
           
-          {/* 2. ACTIVATE THE TOAST NOTIFICATION SYSTEM HERE */}
           <Toaster 
             position="top-right" 
             toastOptions={{
               duration: 4000,
               style: {
-                background: '#1F2937', // Dark Gray (Professional)
+                background: '#1F2937', 
                 color: '#fff',
                 borderRadius: '12px',
                 padding: '16px',
@@ -52,13 +50,13 @@ function App() {
               },
               success: {
                 iconTheme: {
-                  primary: '#10B981', // Emerald Green
+                  primary: '#10B981', 
                   secondary: 'white',
                 },
               },
               error: {
                 iconTheme: {
-                  primary: '#EF4444', // Red
+                  primary: '#EF4444', 
                   secondary: 'white',
                 },
               },
